@@ -2,97 +2,156 @@
   #include <TFT_eSPI.h>  // Display library
   #include <SPI.h>
 
+  TFT_eSPI tft = TFT_eSPI();
+
 //CONSTANTS
 
   // Time in miliseconds between frames
-  #define SPEED 75
+  #define SPEED 100
 
-  // This should be calculated from the display size
   #define TILE_SIZE 8
-  #define GRID_WIDTH (tft.width() / TILE_SIZE)
-  #define GRID_HEIGHT (tft.height() / TILE_SIZE)
-
-  #define SNAKE_HEAD_CHAR 'Q' 
-  #define SNAKE_BODY_CHAR 'o' // Code 1
-  #define BOARD_CHAR ' ' // Code 0
-  #define APPLE_CHAR '@' // Code 2
-  #define WALL_CHAR '#'  // Code -1
+  #define GRID_WIDTH (320 / TILE_SIZE)
+  #define GRID_HEIGHT (170 / TILE_SIZE)
 
 //STRUCTS
 
-  struct snakeSegment{
+  typedef struct{
     int x, y;
+  } Point;
+
+//ENUMS
+
+  enum Tile{
+    EMPTY,
+    WALL,
+    SNAKE,
+    APPLE
   };
 
-  struct sApple{
-    int x, y;
+  enum Direction {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT
   };
 
-//GLOBAL VARIABLES  
+// GLOBAL VARIABLES
+  
+  int snakeLength;
+  int grid [GRID_HEIGHT][GRID_WIDTH];
+  
+  Point snake[100];
+  Point apple;
 
-  int board [BOARD_HEIGHT][BOARD_WIDTH];
+  bool gameOver;
 
-//PROTOTYPES
-
-  //...
+  Direction currentDirection;
 
 // SETUP
 
-  TFT_eSPI tft = TFT_eSPI();  // Usa o setup ativado
-
   void setup() {
     tft.init();
-    tft.setRotation(1);           // Rotação horizontal
-
-    titleScreen();
-
+    tft.setRotation(1);
     Serial.begin(115200);
-    Serial.println("Hello World no Serial Monitor!");
+    Serial.println("Game started.");
+    initGame();
   }
 
 // LOOP
 
   void loop() {
-    //Nada
+    if(gameOver){
+      gameOverScreen();
+      delay(2000);
+      initGame();
+    }
+
+    readInput();
+    update();
+    delay(SPEED);
+
+    titleScreen();
   }
 
 // FUNCTION
 
   void titleScreen(){
-    int16_t x, y;
-    uint16_t w, h;
     String msg;
-
     tft.fillScreen(TFT_BLACK);
     tft.setTextColor(TFT_YELLOW);
     tft.setTextSize(2);
+    tft.setTextDatum(MC_DATUM);
 
+    const char* countdown[] = { "Get ready!", "3...", "2...", "1...", "GO!" };
+    for (int i = 0; i < 5; ++i) {
+      msg = countdown[i];
+      tft.drawString(msg, tft.width() / 2, tft.height() / 2);
+      delay(1000);
+      tft.fillScreen(TFT_BLACK);
+    }
+  }
 
-    // Get text bounds (calculates width and height)
-    tft.setTextDatum(MC_DATUM); // MC = Middle Center
+  void initGame(){
+    gameOver = false;
+    snakeLength = 4;
+    currentDirection = RIGHT;
 
-    msg = "Get ready!";
-    tft.drawString(msg, tft.width()/2, tft.height()/2);
-    delay(1000);
-    tft.fillScreen(TFT_BLACK);
+    // Initializes grid
+    for (int i = 0; i < GRID_HEIGHT; ++i)
+      for (int j = 0; j < GRID_WIDTH; ++j)
+          grid[i][j] = EMPTY;
 
-    msg = "3...";
-    tft.drawString(msg, tft.width()/2, tft.height()/2);
-    delay(1000);
-    tft.fillScreen(TFT_BLACK);
+    // Sets snake (is this right?)
+    for (int i = 0; i < snakeLength; i++) {
+      snake[i].x = GRID_WIDTH / 2 - i;
+      snake[i].y = GRID_HEIGHT / 2;
+      grid[snake[i].y][snake[i].x] = SNAKE;
+    }
 
-    msg = "2...";
-    tft.drawString(msg, tft.width()/2, tft.height()/2);
-    delay(1000);
-    tft.fillScreen(TFT_BLACK);
+    // Sets walls
+    for (int i = 0; i < GRID_HEIGHT; ++i){
+        grid[i][0] = WALL;
+        grid[i][GRID_WIDTH - 1] = WALL;    
+    }
+    for (int i = 0; i < GRID_WIDTH; ++i){
+        grid[0][i] = WALL;
+        grid[GRID_HEIGHT - 1][i] = WALL; 
+    }
 
-    msg = "1...";
-    tft.drawString(msg, tft.width()/2, tft.height()/2);
-    delay(1000);
-    tft.fillScreen(TFT_BLACK);
+    apple = spawnApple();
 
-    msg = "GO!";
-    tft.drawString(msg, tft.width()/2, tft.height()/2);
-    delay(500);
-    //tft.fillScreen(TFT_BLACK);
+    titleScreen();
+  }
+
+  void update(){};
+
+  void gameOverScreen(){
+    tft.fillScreen(TFT_RED);
+    tft.setTextColor(TFT_WHITE);
+    tft.setTextSize(2);
+    tft.setTextDatum(MC_DATUM);
+    tft.drawString("GAME OVER", tft.width() / 2, tft.height() / 2);
+  };
+
+  Point spawnApple(){
+    Point a;
+    do {
+      a.x = random(1, GRID_HEIGHT - 1);
+      a.y = random(1, GRID_WIDTH - 1);
+    } while (grid[a.x][a.y] != EMPTY);
+
+    grid[a.x][a.y] = APPLE;
+    return a;
+  }
+
+  void readInput() {
+    if (Serial.available()) {
+      char key = Serial.read();
+      switch (key) {
+        case 'w': currentDirection = UP; break;
+        case 's': currentDirection = DOWN; break;
+        case 'a': currentDirection = LEFT; break;
+        case 'd': currentDirection = RIGHT; break;
+      }
+    }
   }
