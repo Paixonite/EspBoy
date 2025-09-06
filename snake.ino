@@ -1,326 +1,103 @@
-// LIBRARIES
-#include <TFT_eSPI.h>  // Display library
-#include <SPI.h>
+#include "esp_camera.h"
+#include "FS.h"
+#include "SD_MMC.h"
 
-TFT_eSPI tft = TFT_eSPI();
+// Configuração da câmera (modelo AI Thinker)
+#define PWDN_GPIO_NUM     32
+#define RESET_GPIO_NUM    -1
+#define XCLK_GPIO_NUM      0
+#define SIOD_GPIO_NUM     26
+#define SIOC_GPIO_NUM     27
 
-// CONSTANTS
-#define SPEED 200  // Time in ms between frames
-#define CELL_SIZE 8
-// The display resolution must me manually placed
-#define GRID_WIDTH  (320 / CELL_SIZE)
-#define GRID_HEIGHT (169 / CELL_SIZE)
+#define Y9_GPIO_NUM       35
+#define Y8_GPIO_NUM       34
+#define Y7_GPIO_NUM       39
+#define Y6_GPIO_NUM       36
+#define Y5_GPIO_NUM       21
+#define Y4_GPIO_NUM       19
+#define Y3_GPIO_NUM       18
+#define Y2_GPIO_NUM        5
+#define VSYNC_GPIO_NUM    25
+#define HREF_GPIO_NUM     23
+#define PCLK_GPIO_NUM     22
 
-#define Y_OFFSET CELL_SIZE  // 1 tile = 8 px vertical offset
+// 4 for flash led or 33 for normal led
+#define LED_GPIO_NUM   4
 
-#define BTN_UP     1
-#define BTN_RIGHT  2
-#define BTN_LEFT   3
-#define BTN_DOWN   43
-#define BTN_SELECT 44
-#define BTN_START  18
-#define BTN_A      17
-#define BTN_B      16
-#define BUZZER_PIN 21
+void startCameraServer(); // se futuramente quiser webserver
+void setupLedFlash();
 
-// STRUCTS
-typedef struct {
-  int x, y;
-} Point;
-
-// ENUMS
-enum Cell {
-  EMPTY,
-  WALL,
-  SNAKE,
-  APPLE
-};
-
-enum Direction {
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT
-};
-
-// GLOBAL VARIABLES
-int snakeLength;
-int grid[GRID_WIDTH][GRID_HEIGHT];
-Point snake[100];
-bool gameOver;
-
-Direction currentDirection;
-Direction pendingDirection;
-
-// Used for frame counting
-unsigned long now;
-unsigned long lastUpdate;
-
-int score;
-
-int buzzFrames;
-
-// SETUP
 void setup() {
-  // Init tft display
-  tft.init();
-  tft.setRotation(1);
-
-  // Init serial monitor
   Serial.begin(115200);
-  Serial.println("Game started.");
+  Serial.setDebugOutput(true);
 
-  lastUpdate = 0;
+  // --- Inicializar câmera ---
+  camera_config_t config;
+  config.ledc_channel = LEDC_CHANNEL_0;
+  config.ledc_timer   = LEDC_TIMER_0;
+  config.pin_d0       = Y2_GPIO_NUM;
+  config.pin_d1       = Y3_GPIO_NUM;
+  config.pin_d2       = Y4_GPIO_NUM;
+  config.pin_d3       = Y5_GPIO_NUM;
+  config.pin_d4       = Y6_GPIO_NUM;
+  config.pin_d5       = Y7_GPIO_NUM;
+  config.pin_d6       = Y8_GPIO_NUM;
+  config.pin_d7       = Y9_GPIO_NUM;
+  config.pin_xclk     = XCLK_GPIO_NUM;
+  config.pin_pclk     = PCLK_GPIO_NUM;
+  config.pin_vsync    = VSYNC_GPIO_NUM;
+  config.pin_href     = HREF_GPIO_NUM;
+  config.pin_sscb_sda = SIOD_GPIO_NUM;
+  config.pin_sscb_scl = SIOC_GPIO_NUM;
+  config.pin_pwdn     = PWDN_GPIO_NUM;
+  config.pin_reset    = RESET_GPIO_NUM;
+  config.xclk_freq_hz = 20000000;
+  config.pixel_format = PIXFORMAT_JPEG;
 
-  // Setup pins
-  pinMode(BTN_UP, INPUT_PULLDOWN);
-  pinMode(BTN_DOWN, INPUT_PULLDOWN);
-  pinMode(BTN_LEFT, INPUT_PULLDOWN);
-  pinMode(BTN_RIGHT, INPUT_PULLDOWN);
-  pinMode(BTN_START, INPUT_PULLDOWN);
-  pinMode(BTN_SELECT, INPUT_PULLDOWN);
-  pinMode(BTN_A, INPUT_PULLDOWN);
-  pinMode(BTN_B, INPUT_PULLDOWN);
-  pinMode(BUZZER_PIN, OUTPUT);  // Buzzer out
+  // Frame size (resolução)
+  config.frame_size = FRAMESIZE_UXGA; // 1600x1200 (~2MP)
+  config.jpeg_quality = 12; // menor = melhor qualidade
+  config.fb_count = 1;
 
-  initGame();
-}
-
-// LOOP
-void loop() {
-  if (gameOver) {
-    gameOverScreen();
-    delay(3000);
-    initGame();
-  }
-
-  readInput();
-
-  now = millis();
-  if (now - lastUpdate >= SPEED) {
-    update();
-    lastUpdate = now;
-    buzz();
-  }
-}
-
-// INIT GAME
-void initGame() {
-  score = 0;
-  gameOver = false;
-  snakeLength = 4;
-  currentDirection = RIGHT;
-
-  // Inicializa grid
-  for (int x = 0; x < GRID_WIDTH; x++)
-    for (int y = 0; y < GRID_HEIGHT; y++)
-      grid[x][y] = EMPTY;
-
-  // Define cobra no centro
-  for (int i = 0; i < snakeLength; i++) {
-    snake[i].x = GRID_WIDTH / 2 - i;
-    snake[i].y = GRID_HEIGHT / 2;
-    grid[snake[i].x][snake[i].y] = SNAKE;
-  }
-
-  // Paredes
-  for (int y = 0; y < GRID_HEIGHT; y++) {
-    grid[0][y] = WALL;
-    grid[GRID_WIDTH - 1][y] = WALL;
-  }
-  for (int x = 0; x < GRID_WIDTH; x++) {
-    grid[x][0] = WALL;
-    grid[x][GRID_HEIGHT - 1] = WALL;
-  }
-
-  spawnApple();
-  titleScreen();
-  drawGrid();
-}
-
-// UPDATE
-void update() {
-  // Apaga a cauda
-  grid[snake[snakeLength - 1].x][snake[snakeLength - 1].y] = EMPTY;
-
-  tft.fillRect(
-    snake[snakeLength - 1].x * CELL_SIZE,
-    snake[snakeLength - 1].y * CELL_SIZE + Y_OFFSET,
-    CELL_SIZE,
-    CELL_SIZE,
-    TFT_BLACK
-  );
-  
-  // Move corpo
-  for (int i = snakeLength - 1; i > 0; i--) {
-    snake[i] = snake[i - 1];
-  }
-
-  // Calcula a posição da cabeça
-  int dx = 0, dy = 0;
-  currentDirection = pendingDirection;
-  switch (currentDirection) {
-    case UP:    dy = -1; break;
-    case DOWN:  dy =  1; break;
-    case LEFT:  dx = -1; break;
-    case RIGHT: dx =  1; break;
-  }
-
-  int newX = snake[0].x + dx;
-  int newY = snake[0].y + dy;
-
-  // Verifica colisão
-  int collided = grid[newX][newY];
-  if (collided == SNAKE || collided == WALL) {
-    gameOver = true;
+  Serial.println("=== INICIANDO CONFIGURAÇÃO ===");
+  if (esp_camera_init(&config) != ESP_OK) {
+    Serial.println("Falha ao iniciar a câmera");
     return;
-    // todo: um frame de coyote time
-  }
+  } else Serial.println("Câmera iniciada!");
 
-  if (collided == APPLE) {
-    snakeLength++;
-    snake[snakeLength - 1] = snake[snakeLength - 2];
-    spawnApple();
-    buzzFrames++;
-    score++;
-  }
+  // --- Inicializar SD ---
+  if (!SD_MMC.begin("/sdcard", true)) { // true = 1-bit mode (mais estável)
+    Serial.println("Falha ao montar SD Card");
+    return;
+  } else Serial.println("Cartão SD montado!");
 
-  // Move cabeça
-  snake[0].x = newX;
-  snake[0].y = newY;
-  grid[newX][newY] = SNAKE;
-
-  // Desenha cabeça
-  tft.fillRect(
-    snake[0].x * CELL_SIZE,
-    snake[0].y * CELL_SIZE + Y_OFFSET,
-    CELL_SIZE,
-    CELL_SIZE,
-    TFT_GREEN
-  );
-
-  drawScoreHUD();
+  Serial.println("Câmera e SD prontos!");
 }
 
-// DRAW GRID
-void drawGrid() {
-  for (int x = 0; x < GRID_WIDTH; x++) {
-    for (int y = 0; y < GRID_HEIGHT; y++) {
-      uint16_t color;
-      if (grid[x][y] == EMPTY)      color = TFT_BLACK;
-      else if (grid[x][y] == SNAKE) color = TFT_GREEN;
-      else if (grid[x][y] == APPLE) color = TFT_RED;
-      else if (grid[x][y] == WALL)  color = TFT_WHITE;
+void loop() {
+  Serial.println("Capturando imagem...");
 
-      tft.fillRect(
-        x * CELL_SIZE,
-        y * CELL_SIZE + Y_OFFSET,
-        CELL_SIZE,
-        CELL_SIZE,
-        color
-      );
-    }
-  }
-  tft.fillRect(0, 0, tft.width(), Y_OFFSET, TFT_BLACK); // clear top bar
-
-  drawScoreHUD();
-}
-
-// TITLE SCREEN
-void titleScreen() {
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_YELLOW);
-  tft.setTextSize(2);
-  tft.setTextDatum(MC_DATUM);
-  tft.drawString("Press START", tft.width() / 2, tft.height() / 2);
-
-  // Espera pelo botão START
-  while (digitalRead(BTN_START) == LOW) {
-    delay(10);
-  }
-}
-
-// GAME OVER SCREEN
-void gameOverScreen() {
-  tft.fillScreen(TFT_RED);
-  tft.setTextColor(TFT_WHITE);
-  tft.setTextSize(2);
-  tft.setTextDatum(MC_DATUM);
-
-
-  tft.drawString("GAME OVER", tft.width() / 2, tft.height() / 2 - 12);
-  String s = "Score: " + String(score);
-  tft.drawString(s, tft.width() / 2, tft.height() / 2 + 12);
-}
-
-// SPAWN APPLE
-void spawnApple() {
-  Point apple;
-  do {
-    apple.x = random(1, GRID_WIDTH - 1);
-    apple.y = random(1, GRID_HEIGHT - 1);
-  } while (grid[apple.x][apple.y] != EMPTY);
-
-  grid[apple.x][apple.y] = APPLE;
-
-  // Desenha maçã
-  tft.fillRect(
-    apple.x * CELL_SIZE,
-    apple.y * CELL_SIZE + Y_OFFSET,
-    CELL_SIZE,
-    CELL_SIZE,
-    TFT_RED
-  );
-}
-
-// READ INPUT
-void readInput() {
-  // Arrow keys
-  if (digitalRead(BTN_UP) == HIGH && currentDirection != DOWN) {
-    pendingDirection = UP;
-  }
-  if (digitalRead(BTN_DOWN) == HIGH && currentDirection != UP) {
-    pendingDirection = DOWN;
-  }
-  if (digitalRead(BTN_LEFT) == HIGH && currentDirection != RIGHT) {
-    pendingDirection = LEFT;
-  }
-  if (digitalRead(BTN_RIGHT) == HIGH && currentDirection != LEFT) {
-    pendingDirection = RIGHT;
+  // Captura
+  camera_fb_t * fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("Falha na captura");
+    delay(5000);
+    return;
   }
 
-  // Start and Select
-  if (digitalRead(BTN_START) == HIGH) {
-    //do something
-  }
-  if (digitalRead(BTN_SELECT) == HIGH) {
-    //do something
-  }
-
-  // A and B
-  if (digitalRead(BTN_A) == HIGH) {
-    //do something
-  }
-  if (digitalRead(BTN_B) == HIGH) {
-    //do something
+  // Salvar no SD
+  String path = "/foto_" + String(millis()) + ".jpg";
+  File file = SD_MMC.open(path.c_str(), FILE_WRITE);
+  if (!file) {
+    Serial.println("Erro ao abrir arquivo no SD");
+  } else {
+    file.write(fb->buf, fb->len); // salva os bytes da foto
+    Serial.printf("Imagem salva em: %s (%u bytes)\n", path.c_str(), fb->len);
+    file.close();
   }
 
-}
+  // Liberar buffer
+  esp_camera_fb_return(fb);
 
-void buzz(){
-  // Buzzes for one frame. It i'll keep dong it until buzzFrames is 0
-  if(buzzFrames > 0){
-    digitalWrite(BUZZER_PIN, HIGH);
-    buzzFrames--;
-  }else{
-    digitalWrite(BUZZER_PIN, LOW);
-  }
-}
-
-void drawScoreHUD() {
-  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  tft.setTextSize(1);
-  tft.setTextDatum(MC_DATUM);
-  String s = "Score: " + String(score);
-  tft.drawString(s, tft.width() / 2, Y_OFFSET / 2); // centered in top bar
+  delay(10000); // tira foto a cada 10s (ajuste para X minutos depois)
 }
