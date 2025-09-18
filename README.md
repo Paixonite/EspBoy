@@ -22,9 +22,9 @@ Atualmente, o projeto conta com o clássico **Jogo da Cobrinha (Snake)** totalme
 ## ⚙️ Hardware Utilizado
 
 -   **Placa de Desenvolvimento:** LILYGO T-Display ESP32-S3 (com display TFT de 1.9" 170x320 integrado).
--   **Entradas:** 8 botões *push button* (Direcionais, Start, Select, A, B) em um protoboado.
+-   **Entradas:** 8 botões *push button* (Direcionais, Start, Select, A, B) em um protoboard.
 -   **Áudio:** 1 Buzzer passivo para reprodução de melodias e efeitos sonoros.
--   **Alimentação:** Bateria de LiPo 3.7V recarregável, gerenciada pela própria placa.
+-   **Alimentação:** Bateria de LiPo 3.7V recarregável.
 
 ## ✨ Features do Firmware
 
@@ -70,10 +70,6 @@ EspBoy/
     -   Instale a biblioteca **TFT_eSPI** de Bodmer. (Pode ser necessário configurar o `User_Setup.h` da biblioteca para a placa LILYGO T-Display S3, embora muitas versões recentes a detectem automaticamente).
 4.  **Compilação:** Clone este repositório, abra o arquivo `EspBoy.ino` na Arduino IDE, selecione a placa correta (LILYGO T-Display S3) e faça o upload.
 
-## 🏫 Contexto do Projeto
-
-Este projeto é uma iniciativa de aprendizado realizada no **Colégio Técnico (Coltec) da Universidade Federal de Minas Gerais (UFMG)**. Agradeço à instituição pelo fornecimento dos componentes eletrônicos e pelo acesso ao laboratório, que foram essenciais para a viabilização do EspBoy.
-
 ## 👤 Autor
 
--   **[Seu Nome Aqui]** - [Seu GitHub ou outra rede social, se quiser]
+-   **Vítor Paixão** - https://github.com/Paixonite
