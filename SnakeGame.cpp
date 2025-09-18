@@ -1,16 +1,14 @@
-#include "SnakeGame.h" // Inclui a definição da nossa classe
+#include "SnakeGame.h"
 #include "audio_assets.h"
 
-// Construtor: Apenas inicializa as variáveis de membro.
 // A sintaxe ": tft(tft_display)" é uma "initializer list", mais eficiente em C++.
 SnakeGame::SnakeGame(TFT_eSPI* tft_display, SoundManager* sound_manager) 
     : tft(tft_display), sound(sound_manager) {
-    // O construtor pode ficar vazio se tudo for inicializado no setup.
+    _exit_request = false;
+    lastStartState = LOW; 
 }
 
-// Renomeamos initGame para setup() para manter o padrão.
 void SnakeGame::setup() {
-    lastStartState = LOW; 
     score = 0;
     gameOver = false;
     paused = false;
@@ -44,23 +42,18 @@ void SnakeGame::setup() {
     titleScreen();
 }
 
-// A antiga função loop() global agora é o loop da classe.
 void SnakeGame::loop() {
- // O loop agora é um roteador que executa código baseado no estado atual
     switch (currentState) {
         
         case STATE_TITLE:
-            // No estado de título, apenas esperamos o botão START ser pressionado
             if (digitalRead(BTN_START) == HIGH) { //quebrado?
-                // Ao pressionar, mudamos para o estado de jogo
                 currentState = STATE_PLAYING;
                 paused = true; // Gambiarra pro jogo não começar pausado
-                drawGrid(); // Desenha o grid inicial do jogo
+                drawGrid();
             }
             break;
 
         case STATE_PLAYING:
-            // Este é o loop de jogo normal
             readInput();
 
             now = millis();
@@ -71,28 +64,25 @@ void SnakeGame::loop() {
             break;
 
         case STATE_GAME_OVER:
-            // No estado de game over, esperamos 3 segundos sem bloquear
-            if (millis() - gameOverStartTime > 3000) {
-                // Após 3 segundos, reinicia o jogo chamando setup()
-                setup(); // setup() já define o estado para STATE_TITLE
+            if (millis() - gameOverStartTime > 5000) {
+                setup();
             }
             break;
     }
 }
 
-// --- A PARTIR DAQUI, APENAS COPIE E COLE SUAS FUNÇÕES ORIGINAIS ---
-// A única mudança é adicionar "SnakeGame::" na frente de cada uma
-// e trocar "tft." por "tft->".
-
 void SnakeGame::update() {
+    // Deleta o rabo
     grid[snake[snakeLength - 1].x][snake[snakeLength - 1].y] = EMPTY;
 
     tft->fillRect(snake[snakeLength - 1].x * CELL_SIZE, snake[snakeLength - 1].y * CELL_SIZE + Y_OFFSET, CELL_SIZE, CELL_SIZE, TFT_BLACK);
 
+    // Anda o corpo
     for (int i = snakeLength - 1; i > 0; i--) {
         snake[i] = snake[i - 1];
     }
 
+    // Anda a cabeça baseado na direção
     int dx = 0, dy = 0;
     currentDirection = pendingDirection;
     switch (currentDirection) {
@@ -102,37 +92,60 @@ void SnakeGame::update() {
         case RIGHT: dx = 1; break;
     }
 
+    // Checa colisões
     int newX = snake[0].x + dx;
     int newY = snake[0].y + dy;
-
     int collided = grid[newX][newY];
+
+    // Anda com a cabeça (trecho movido)
+    snake[0].x = newX;
+    snake[0].y = newY;
+    grid[newX][newY] = SNAKE;
+
     if (collided == SNAKE || collided == WALL) {
-        // ---- MUDANÇA IMPORTANTE ----
-        // Em vez de 'gameOver = true;', mudamos o estado do jogo
         currentState = STATE_GAME_OVER;
-        gameOverStartTime = millis(); // Inicia o timer do game over
-        sound->play(MELODY_GAME_OVER, MELODY_GAME_OVER_LENGTH); // Toca a música
-        gameOverScreen(); // Desenha a tela de game over
-        return; // Sai da função update
+        gameOverStartTime = millis();
+        sound->play(MELODY_GAME_OVER, MELODY_GAME_OVER_LENGTH);
+        gameOverScreen();
+        return;
     }
 
     if (collided == APPLE) {
         snakeLength++;
         snake[snakeLength - 1] = snake[snakeLength - 2];
-        spawnApple();
+        Point newApple = spawnApple();
         score++;
+
+        tft->fillRect(
+            newApple.x * CELL_SIZE,
+            newApple.y * CELL_SIZE + Y_OFFSET,
+            CELL_SIZE,
+            CELL_SIZE,
+            TFT_RED
+        );
+        
         sound->play(MELODY_APPLE, MELODY_APPLE_LENGTH);
+        
+        //Verde escuro caso tenha comido
+        tft->fillRect(snake[0].x * CELL_SIZE, snake[0].y * CELL_SIZE + Y_OFFSET, CELL_SIZE, CELL_SIZE, TFT_DARKGREEN);
+    } else  {
+        tft->fillRect(snake[0].x * CELL_SIZE, snake[0].y * CELL_SIZE + Y_OFFSET, CELL_SIZE, CELL_SIZE, TFT_GREEN);
     }
-
-    snake[0].x = newX;
-    snake[0].y = newY;
-    grid[newX][newY] = SNAKE;
-
-    tft->fillRect(snake[0].x * CELL_SIZE, snake[0].y * CELL_SIZE + Y_OFFSET, CELL_SIZE, CELL_SIZE, TFT_GREEN);
 
     drawScoreHUD();
 }
 
+Point SnakeGame::spawnApple() {
+  Point apple;
+  do {
+    apple.x = random(1, GRID_WIDTH - 1);
+    apple.y = random(1, GRID_HEIGHT - 1);
+  } while (grid[apple.x][apple.y] != EMPTY);
+
+  grid[apple.x][apple.y] = APPLE;
+
+  return apple; // Retorna a coordenada da nova maçã
+}
 void SnakeGame::drawGrid() {
     for (int x = 0; x < GRID_WIDTH; x++) {
         for (int y = 0; y < GRID_HEIGHT; y++) {
@@ -154,11 +167,11 @@ void SnakeGame::titleScreen() {
     tft->setTextSize(2);
     tft->setTextDatum(MC_DATUM);
     tft->drawString("Press START", tft->width() / 2, tft->height() / 2);
+
+    // // Espera o botão START ser solto para evitar a pausa imediata
     // while (digitalRead(BTN_START) == LOW) {
     //     delay(10);
     // }
-
-    // // NOVO: Espera o botão START ser solto para evitar a pausa imediata
     // while (digitalRead(BTN_START) == HIGH) {
     //     delay(10);
     // }
@@ -175,14 +188,13 @@ void SnakeGame::gameOverScreen() {
     tft->drawString(s, tft->width() / 2, tft->height() / 2 + 12);
 }
 
-void SnakeGame::spawnApple() {
-    Point apple;
-    do {
-        apple.x = random(1, GRID_WIDTH - 1);
-        apple.y = random(1, GRID_HEIGHT - 1);
-    } while (grid[apple.x][apple.y] != EMPTY);
-    grid[apple.x][apple.y] = APPLE;
-    tft->fillRect(apple.x * CELL_SIZE, apple.y * CELL_SIZE + Y_OFFSET, CELL_SIZE, CELL_SIZE, TFT_RED);
+void SnakeGame::drawScoreHUD() {
+    tft->fillRect(0, 0, tft->width(), Y_OFFSET, TFT_BLACK);
+    tft->setTextColor(TFT_YELLOW, TFT_BLACK);
+    tft->setTextSize(1);
+    tft->setTextDatum(MC_DATUM);
+    String s = "Score: " + String(score);
+    tft->drawString(s, tft->width() / 2, Y_OFFSET / 2);
 }
 
 void SnakeGame::readInput() {
@@ -191,15 +203,12 @@ void SnakeGame::readInput() {
     if (digitalRead(BTN_LEFT) == HIGH && currentDirection != RIGHT) pendingDirection = LEFT;
     if (digitalRead(BTN_RIGHT) == HIGH && currentDirection != LEFT) pendingDirection = RIGHT;
 
-    // 1. Lê o estado atual do botão
+    // Pause game
     bool currentStartState = digitalRead(BTN_START);
 
-    // 2. Verifica se a borda de descida ocorreu (estava pressionado E agora está solto)
     if (lastStartState == HIGH && currentStartState == LOW) {
-        // Ação de Pausa/Despausa
         paused = !paused;
 
-        // Lógica para desenhar/limpar a tela de pausa
         if (paused && !gameOver) {
             tft->fillRect(0, 0, tft->width(), Y_OFFSET, TFT_BLACK);
             tft->setTextColor(TFT_YELLOW, TFT_BLACK);
@@ -212,15 +221,14 @@ void SnakeGame::readInput() {
         }
     }
 
-    // 3. Atualiza o estado anterior para o próximo ciclo do loop
     lastStartState = currentStartState;
+
+    // Exit game (start + select)
+    if (digitalRead(BTN_START) == HIGH && digitalRead(BTN_SELECT) == HIGH) {
+        _exit_request = true; // ...levanta o sinalizador para sair!
+    }
 }
 
-void SnakeGame::drawScoreHUD() {
-    tft->fillRect(0, 0, tft->width(), Y_OFFSET, TFT_BLACK);
-    tft->setTextColor(TFT_YELLOW, TFT_BLACK);
-    tft->setTextSize(1);
-    tft->setTextDatum(MC_DATUM);
-    String s = "Score: " + String(score);
-    tft->drawString(s, tft->width() / 2, Y_OFFSET / 2);
+bool SnakeGame::shouldExit() const {
+    return _exit_request;
 }

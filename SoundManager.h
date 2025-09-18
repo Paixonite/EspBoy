@@ -6,10 +6,14 @@
 
 class SoundManager {
 public:
-    SoundManager(int buzzer_pin); // Construtor
+    SoundManager(int buzzer_pin);
     void play(const Note melody[], int melody_length);
     void stop();
-    void loop(); // A função que deve ser chamada repetidamente
+    void loop();
+
+    // --- MÉTODOS PARA MUTE ---
+    void setMute(bool muted);
+    bool isMuted() const;
 
 private:
     int _buzzer_pin;
@@ -18,6 +22,7 @@ private:
     int _current_note_index;
     unsigned long _note_start_time;
     bool _is_playing;
+    bool _is_muted; 
 };
 
 #endif // SOUNDMANAGER_H

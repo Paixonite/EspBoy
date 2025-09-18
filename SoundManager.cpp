@@ -4,10 +4,15 @@ SoundManager::SoundManager(int buzzer_pin) {
     _buzzer_pin = buzzer_pin;
     pinMode(_buzzer_pin, OUTPUT);
     _is_playing = false;
+    _is_muted = false;
 }
 
 // Inicia a reprodução de uma melodia
 void SoundManager::play(const Note melody[], int melody_length) {
+    if (_is_muted) {
+        return; // Se o sistema está mudo, simplesmente não inicia a melodia.
+    }
+    
     _current_melody = melody;
     _melody_length = melody_length;
     _current_note_index = 0;
@@ -30,10 +35,10 @@ void SoundManager::stop() {
     noTone(_buzzer_pin);
 }
 
-// O coração do sistema: verifica se é hora de tocar a próxima nota
+// Verifica se é hora de tocar a próxima nota
 void SoundManager::loop() {
-    if (!_is_playing) {
-        return; // Se não há nada tocando, não faz nada
+    if (!_is_playing || _is_muted) {
+        return;
     }
 
     // Pega a duração da nota atual
@@ -62,4 +67,15 @@ void SoundManager::loop() {
             }
         }
     }
+}
+
+void SoundManager::setMute(bool muted) {
+    _is_muted = muted;
+    if (_is_muted) {
+        stop(); // Se está silenciando, para qualquer som que esteja tocando
+    }
+}
+
+bool SoundManager::isMuted() const {
+    return _is_muted;
 }

@@ -12,6 +12,6 @@
 #define BTN_B      16
 #define BUZZER_PIN 21
 
-// Futuramente, pinos de bateria, SD card, etc. podem vir aqui
+// Pinos de bateria vão vir aqui.
 
 #endif // PINS_H
