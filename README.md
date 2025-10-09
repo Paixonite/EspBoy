@@ -1,17 +1,19 @@
 # 🎮 EspBoy ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow) ![Plataforma](https://img.shields.io/badge/plataforma-ESP32--S3-blue) ![Framework](https://img.shields.io/badge/framework-Arduino-cyan)
 
-Um console de jogos portátil, estilo "Game Boy", construído do zero utilizando um ESP32-S3 da LILYGO, componentes eletrônicos básicos e muita programação! Este é um projeto pessoal com fins educacionais, desenvolvido como parte dos meus estudos no **Colégio Técnico da UFMG (Coltec)**, utilizando materiais e o espaço maker fornecidos pela instituição.
+![EspBoy logo](EspBoy_logo.png)
+
+Um console de jogos portátil, estilo "Game Boy", construído do zero utilizando um ESP32-S3 da LILYGO, componentes eletrônicos básicos e muita programação! Este é um projeto pessoal com fins educacionais, desenvolvido utilizando materiais e o espaço maker do **Colégio Técnico da UFMG (Coltec)**.
 
 ## 🕹️ Sobre o Projeto
 
-O objetivo do EspBoy é ir além de simplesmente "fazer um jogo funcionar". A meta é construir uma plataforma de hardware e software robusta e modular, aprendendo na prática conceitos de:
+O objetivo do EspBoy é construir uma plataforma de hardware e software robusta e modular, aprendendo na prática conceitos de:
 
 - **Desenvolvimento de Hardware:** Montagem de circuitos, soldagem e integração de componentes.
 - **Programação de Baixo Nível:** Interação direta com GPIOs, timers e periféricos do microcontrolador.
 - **Arquitetura de Software:** Criação de um sistema organizado, com um "firmware principal" que gerencia "bibliotecas" de jogos independentes.
 - **Gerenciamento de Energia:** Implementação de um sistema de bateria recarregável para portabilidade real.
 
-Atualmente, o projeto conta com o clássico **Jogo da Cobrinha (Snake)** totalmente funcional.
+Atualmente, o projeto conta com dois jogos clássicos.
 
 ## ⚙️ Hardware Utilizado
 
@@ -30,10 +32,8 @@ O software do EspBoy foi projetado para ser escalável e eficiente.
 - **🎵 Gerenciador de Áudio Não-Bloqueante:** Um sistema de som que toca melodias e efeitos sonoros em segundo plano, sem usar `delay()` e sem travar a lógica do jogo.
 - **🕹️ Controles Responsivos:** A leitura dos botões é feita de forma não-bloqueante, com técnicas de *debounce* e detecção de borda (ação ao soltar o botão) para uma experiência de jogo precisa.
 - **🚀 Planos Futuros:**
-    - Implementação de um menu de seleção de jogos.
     - Adição de mais clássicos (Tetris, Pac-Man).
     - Exibição do nível da bateria na tela.
-    - Uso do modo *Deep Sleep* para economizar energia.
 
 ## 📂 Estrutura do Código
 
@@ -57,7 +57,7 @@ EspBoy/
 ## 🚀 Como Compilar e Usar
 
 1.  **Ambiente:** O projeto foi desenvolvido usando a **Arduino IDE**.
-2.  **Hardware:** Monte o circuito conforme as definições em `pins.h`.
+2.  **Hardware:** Monte o circuito conforme as definições da pcb.
 3.  **Bibliotecas:**
     - Instale o suporte para placas **ESP32** na Arduino IDE.
     - Instale a biblioteca **TFT_eSPI** de Bodmer. (Pode ser necessário configurar o `User_Setup.h` da biblioteca para a placa LILYGO T-Display S3, embora muitas versões recentes a detectem automaticamente).
