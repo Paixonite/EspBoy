@@ -39,6 +39,7 @@ EspBoy/
 |-- EspBoy.ino           # Firmware principal: inicializa hardware, gerencia o jogo atual.
 |-- pins.h               # Centraliza a definição de todos os pinos de hardware.
 |-- audio_assets.h       # Define as notas musicais e as melodias do jogo.
+|-- Game.h               # Classe genérica dos jogos
 |
 |-- SoundManager/        # Classe que gerencia todo o áudio não-bloqueante.
 |   |-- SoundManager.h
