@@ -13,27 +13,22 @@ O objetivo do EspBoy é construir uma plataforma de hardware e software robusta 
 - **Arquitetura de Software:** Criação de um sistema organizado, com um "firmware principal" que gerencia "bibliotecas" de jogos independentes.
 - **Gerenciamento de Energia:** Implementação de um sistema de bateria recarregável para portabilidade real.
 
-Atualmente, o projeto conta com dois jogos clássicos.
-
 ## ⚙️ Hardware Utilizado
 
 - **Placa de Desenvolvimento:** LILYGO T-Display ESP32-S3 (com display TFT de 1.9" 170x320 integrado).
-- **Entradas:** 8 botões *push button* (Direcionais, Start, Select, A, B) em um protoboard.
+- **Entradas:** 8 botões *push button* (Direcionais, Start, Select, A, B).
 - **Áudio:** 1 Buzzer passivo para reprodução de melodias e efeitos sonoros.
-- **Alimentação:** Bateria de LiPo 3.7V recarregável.
+- **Alimentação:** Bateria de LiPo 3.7V recarregável, genenciada pelo módulo de carregamento USB-C TP4056 e um slide switch.
 
 ## ✨ Features do Firmware
 
 O software do EspBoy foi projetado para ser escalável e eficiente.
 
-- **🐍 Jogo da Cobrinha (Snake):** A primeira prova de conceito, completo com pontuação, tela de título e game over.
-- **🔋 Suporte a Bateria Recarregável:** O firmware inclui rotinas para habilitar e, futuramente, monitorar o nível da bateria, permitindo que o console seja jogado em qualquer lugar.
+- **👾 Jogos:** Atualmente, conta com os clássicos Snake e Flappy Bird. Planos futuros inclurão jogos como Tetris e Frogger
+- **🔋 Suporte a Bateria Recarregável:** O firmware inclui rotinas para habilitar e monitorar o nível da bateria, permitindo que o console seja jogado em qualquer lugar.
 - **🧩 Arquitetura de Software Modular (POO):** O código é organizado com um arquivo `.ino` principal que atua como um "mini-sistema operacional", e cada jogo é sua própria classe (biblioteca). Isso facilita a adição de novos jogos sem alterar o código principal.
 - **🎵 Gerenciador de Áudio Não-Bloqueante:** Um sistema de som que toca melodias e efeitos sonoros em segundo plano, sem usar `delay()` e sem travar a lógica do jogo.
 - **🕹️ Controles Responsivos:** A leitura dos botões é feita de forma não-bloqueante, com técnicas de *debounce* e detecção de borda (ação ao soltar o botão) para uma experiência de jogo precisa.
-- **🚀 Planos Futuros:**
-    - Adição de mais clássicos (Tetris, Pac-Man).
-    - Exibição do nível da bateria na tela.
 
 ## 📂 Estrutura do Código
 
@@ -41,18 +36,22 @@ O projeto segue uma organização limpa que separa as responsabilidades do firmw
 
 ``` 
 EspBoy/
-|-- EspBoy.ino          # Firmware principal: inicializa hardware, gerencia o jogo atual.
-|-- pins.h              # Centraliza a definição de todos os pinos de hardware.
-|-- audio_assets.h      # Define as notas musicais e as melodias do jogo.
+|-- EspBoy.ino           # Firmware principal: inicializa hardware, gerencia o jogo atual.
+|-- pins.h               # Centraliza a definição de todos os pinos de hardware.
+|-- audio_assets.h       # Define as notas musicais e as melodias do jogo.
 |
-|-- SoundManager/       # Classe que gerencia todo o áudio não-bloqueante.
+|-- SoundManager/        # Classe que gerencia todo o áudio não-bloqueante.
 |   |-- SoundManager.h
 |   |-- SoundManager.cpp
 |
-|-- SnakeGame/          # Classe que contém toda a lógica do Jogo da Cobrinha.
+|-- SnakeGame/           # Classe que contém toda a lógica do Snake.
 |   |-- SnakeGame.h
-|   |-- SnakeGame.cpp
-``` 
+|   |-- SnakeGame.cpp[
+|
+|-- FlappyBirdGame/      # Classe que contém toda a lógica do Flappy Bird.
+|   |-- FlappyBirdGame.h
+|   |-- FlappyBird.cpp[
+```
 
 ## 🚀 Como Compilar e Usar
 
@@ -61,7 +60,7 @@ EspBoy/
 3.  **Bibliotecas:**
     - Instale o suporte para placas **ESP32** na Arduino IDE.
     - Instale a biblioteca **TFT_eSPI** de Bodmer. (Pode ser necessário configurar o `User_Setup.h` da biblioteca para a placa LILYGO T-Display S3, embora muitas versões recentes a detectem automaticamente).
-4.  **Compilação:** Clone este repositório, abra o arquivo `EspBoy.ino` na Arduino IDE, selecione a placa correta (LILYGO T-Display S3) e faça o upload.
+4.  **Compilação:** Clone este repositório, abra o arquivo `EspBoy.ino` na Arduino IDE, selecione a placa correta (LILYGO T-Display S3) e faça o upload. Adendo: No Arduino IDE, todos os arquivos de bilioteca (.h) e implementação (.cpp) precisam estar na raiz do projeto, junto ao arquivo principal (.ino)
 
 ## 👤 Autor
 
