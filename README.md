@@ -47,11 +47,11 @@ EspBoy/
 |
 |-- SnakeGame/           # Classe que contém toda a lógica do Snake.
 |   |-- SnakeGame.h
-|   |-- SnakeGame.cpp[
+|   |-- SnakeGame.cpp
 |
 |-- FlappyBirdGame/      # Classe que contém toda a lógica do Flappy Bird.
 |   |-- FlappyBirdGame.h
-|   |-- FlappyBird.cpp[
+|   |-- FlappyBirdGame.cpp
 ```
 
 ## 🚀 Como Compilar e Usar
