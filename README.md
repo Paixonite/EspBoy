@@ -4,17 +4,6 @@
 
 Um console de jogos portátil, estilo "Game Boy", construído do zero utilizando um ESP32-S3 da LILYGO, componentes eletrônicos básicos e muita programação! Este é um projeto pessoal com fins educacionais, desenvolvido utilizando materiais e o espaço maker do **Colégio Técnico da UFMG (Coltec)**.
 
-## 📋 Tabela de Conteúdos
-
-- [🕹️ Sobre o Projeto](#-sobre-o-projeto)
-- [⚙️ Hardware Utilizado](#-hardware-utilizado)
-- [✨ Features do Firmware](#-features-do-firmware)
-- [📂 Estrutura do Código](#-estrutura-do-código)
-- [🚀 Como Compilar e Usar](#-como-compilar-e-usar)
-- [👤 Autor](#-autor)
-
----
-
 ## 🕹️ Sobre o Projeto
 
 O objetivo do EspBoy é construir uma plataforma de hardware e software robusta e modular, aprendendo na prática conceitos de:
