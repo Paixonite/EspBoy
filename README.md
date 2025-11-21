@@ -4,6 +4,17 @@
 
 Um console de jogos portátil, estilo "Game Boy", construído do zero utilizando um ESP32-S3 da LILYGO, componentes eletrônicos básicos e muita programação! Este é um projeto pessoal com fins educacionais, desenvolvido utilizando materiais e o espaço maker do **Colégio Técnico da UFMG (Coltec)**.
 
+## 📋 Tabela de Conteúdos
+
+- [🕹️ Sobre o Projeto](#-sobre-o-projeto)
+- [⚙️ Hardware Utilizado](#-hardware-utilizado)
+- [✨ Features do Firmware](#-features-do-firmware)
+- [📂 Estrutura do Código](#-estrutura-do-código)
+- [🚀 Como Compilar e Usar](#-como-compilar-e-usar)
+- [👤 Autor](#-autor)
+
+---
+
 ## 🕹️ Sobre o Projeto
 
 O objetivo do EspBoy é construir uma plataforma de hardware e software robusta e modular, aprendendo na prática conceitos de:
@@ -18,13 +29,13 @@ O objetivo do EspBoy é construir uma plataforma de hardware e software robusta 
 - **Placa de Desenvolvimento:** LILYGO T-Display ESP32-S3 (com display TFT de 1.9" 170x320 integrado).
 - **Entradas:** 8 botões *push button* (Direcionais, Start, Select, A, B).
 - **Áudio:** 1 Buzzer passivo para reprodução de melodias e efeitos sonoros.
-- **Alimentação:** Bateria de LiPo 3.7V recarregável, genenciada pelo módulo de carregamento USB-C TP4056 e um slide switch.
+- **Alimentação:** Bateria de LiPo 3.7V recarregável, gerenciada pelo módulo de carregamento USB-C TP4056 e um slide switch.
 
 ## ✨ Features do Firmware
 
 O software do EspBoy foi projetado para ser escalável e eficiente.
 
-- **👾 Jogos:** Atualmente, conta com os clássicos Snake e Flappy Bird. Planos futuros inclurão jogos como Tetris e Frogger
+- **👾 Jogos:** Atualmente, conta com os clássicos Snake e Flappy Bird. Planos futuros incluirão jogos como Tetris e Frogger.
 - **🔋 Suporte a Bateria Recarregável:** O firmware inclui rotinas para habilitar e monitorar o nível da bateria, permitindo que o console seja jogado em qualquer lugar.
 - **🧩 Arquitetura de Software Modular (POO):** O código é organizado com um arquivo `.ino` principal que atua como um "mini-sistema operacional", e cada jogo é sua própria classe (biblioteca). Isso facilita a adição de novos jogos sem alterar o código principal.
 - **🎵 Gerenciador de Áudio Não-Bloqueante:** Um sistema de som que toca melodias e efeitos sonoros em segundo plano, sem usar `delay()` e sem travar a lógica do jogo.
@@ -32,9 +43,11 @@ O software do EspBoy foi projetado para ser escalável e eficiente.
 
 ## 📂 Estrutura do Código
 
-O projeto segue uma organização limpa que separa as responsabilidades do firmware:
+O projeto segue uma organização limpa que separa as responsabilidades do firmware. 
 
-``` 
+> **Nota:** Embora a estrutura abaixo mostre pastas separadas para organização lógica, para compilar na **Arduino IDE**, todos os arquivos `.h` e `.cpp` devem estar na **raiz** junto com o `.ino`, a menos que sejam instalados como bibliotecas externas.
+
+```text
 EspBoy/
 |-- EspBoy.ino           # Firmware principal: inicializa hardware, gerencia o jogo atual.
 |-- pins.h               # Centraliza a definição de todos os pinos de hardware.
@@ -61,7 +74,13 @@ EspBoy/
 3.  **Bibliotecas:**
     - Instale o suporte para placas **ESP32** na Arduino IDE.
     - Instale a biblioteca **TFT_eSPI** de Bodmer. (Pode ser necessário configurar o `User_Setup.h` da biblioteca para a placa LILYGO T-Display S3, embora muitas versões recentes a detectem automaticamente).
-4.  **Compilação:** Clone este repositório, abra o arquivo `EspBoy.ino` na Arduino IDE, selecione a placa correta (LILYGO T-Display S3) e faça o upload. Adendo: No Arduino IDE, todos os arquivos de bilioteca (.h) e implementação (.cpp) precisam estar na raiz do projeto, junto ao arquivo principal (.ino)
+4.  **Compilação:**
+    - Clone este repositório
+    - Abra o arquivo `EspBoy.ino` na Arduino IDE
+    - Selecione a placa correta (LILYGO T-Display S3)
+    - Faça o upload.
+      
+>⚠️ Atenção: Para compilar corretamente na Arduino IDE padrão, certifique-se de que todos os arquivos auxiliares (.h e .cpp das classes SoundManager, Game, etc.) estejam localizados na mesma pasta do arquivo EspBoy.ino, e não em subpastas separadas.
 
 ## 👤 Autor
 
